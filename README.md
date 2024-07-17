@@ -13,7 +13,6 @@ This project is a Streamlit application for data exploration, pre-processing, vi
 
     ```bash
     git clone https://github.com/your-username/data-mining-project.git
-    cd data-mining-project
     ```
 
 2. Create a virtual environment and activate it:
