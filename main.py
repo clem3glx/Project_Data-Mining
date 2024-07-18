@@ -1,6 +1,3 @@
-# main.py
-
-# Import necessary libraries
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -11,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 import csv
+import io
 
 # Part I: Initial Data Exploration
 
@@ -30,10 +28,16 @@ def load_data():
         delimiter = st.text_input("Delimiter detected:", value=delimiter)
 
         header = st.text_input("Header row (default is 0)", value="0")
-        data = pd.read_csv(file, header= int(header), delimiter=delimiter)
-        st.dataframe(data.head())
-        st.dataframe(data.tail())
-        return data
+        
+        try:
+            data = pd.read_csv(file, header=int(header), delimiter=delimiter, on_bad_lines='warn')
+            st.dataframe(data.head())
+            st.dataframe(data.tail())
+            return data
+        except pd.errors.ParserError as e:
+            st.error(f"Error parsing file: {e}")
+        except Exception as e:
+            st.error(f"Unexpected error: {e}")
     return None
 
 def data_description(data):
