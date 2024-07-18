@@ -37,7 +37,7 @@ def load_data():
     return None
 
 def data_description(data):
-    st.write("## Data Overview")
+    st.markdown("<h3 style='padding-left: 95px;'>Data Overview selection</h3>", unsafe_allow_html=True)
 
     # Split into two columns for better layout
     col1, col2 = st.columns(2)
@@ -47,13 +47,12 @@ def data_description(data):
         st.metric("Number of columns", data.shape[1])
 
     with col2:
-        st.write("### Column Names")
+        st.write("##### Column Names")
         st.markdown("<ul style='list-style-position: inside;'>", unsafe_allow_html=True)
         for col in data.columns:
             st.markdown(f"<li style='font-family: monospace;'>{col}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
-
-    st.write("### Missing Values per Column")
+    st.markdown("<h3 style='padding-left: 95px;'>Missing Values per Column</h3>", unsafe_allow_html=True)
     missing_values = data.isnull().sum()
     missing_values_df = pd.DataFrame(missing_values, columns=['Missing Values'])
     st.table(missing_values_df)
