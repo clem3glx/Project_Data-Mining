@@ -22,7 +22,7 @@ def detect_delimiter(file):
     return detected_delimiter
 
 def load_data():
-    file = st.file_uploader("Upload CSV", type=["csv"])
+    file = st.file_uploader("Upload CSV", type=["csv", "data"])
     if file is not None:
         delimiter = detect_delimiter(file)
         delimiter = st.text_input("Delimiter detected:", value=delimiter)
@@ -71,6 +71,12 @@ def data_description(data):
 
 # Part II: Data Pre-processing and Cleaning
 def handle_missing_values(data):
+    st.markdown("<h3 style='padding-left: 95px;'>Drop Columns</h3>", unsafe_allow_html=True)
+    column_to_drop = st.multiselect("Select column(s) to drop", data.columns)
+    if column_to_drop:
+        data = data.drop(columns=column_to_drop)
+
+    st.markdown("<h3 style='padding-left: 95px;'>Handle Missing Values</h3>", unsafe_allow_html=True)
     method = st.selectbox("Choose method to handle missing values", ["Delete rows", "Delete columns", "Mean", "Median", "Mode", "KNN Imputation", "Simple Imputation"])
     if method == "Delete rows":
         data = data.dropna()
@@ -87,6 +93,7 @@ def handle_missing_values(data):
         value = st.text_input("Value to replace missing values")
         data = data.fillna(value)
     return data
+
 
 def normalize_data(data):
     method = st.selectbox("Choose normalization method", ["Min-Max", "Z-score"])
