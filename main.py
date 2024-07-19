@@ -5,6 +5,7 @@ from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.cluster import KMeans, DBSCAN
 import matplotlib.pyplot as plt
+from sklearn.metrics import silhouette_score
 import seaborn as sns
 import plotly.express as px
 import csv
@@ -160,21 +161,21 @@ def additional_visualizations(data):
     #         sns.scatterplot(x=data[component].to_numpy(), y=data[output].to_numpy(), ax=ax)
     #         st.pyplot(fig)
 
-    # Matrice de corrélation
-    st.header('Matrice de Corrélation')
+    # Correlation Matrix
+    st.header('Correlation matrix')
     fig, ax = plt.subplots()
     corr_matrix = data.corr()
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', ax=ax)
     st.pyplot(fig)
 
-    # Analyse de la force compressive à 28 jours
-    st.header('Analyse de la Force Compressive à 28 Jours')
-    fig, ax = plt.subplots()
-    sns.boxplot(data=data[['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.', 'Compressive Strength (28-day)(Mpa)']])
-    st.pyplot(fig)
+    # # Analysis of Compressive Force at 28 Days
+    # st.header('Analysis of Compressive Force at 28 Days')
+    # fig, ax = plt.subplots()
+    # sns.boxplot(data=data[['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.', 'Compressive Strength (28-day)(Mpa)']])
+    # st.pyplot(fig)
 
-    # Comparaison entre SLUMP et FLOW
-    st.header('Comparaison entre SLUMP et FLOW')
+    # Comparison between SLUMP and FLOW
+    st.header('Comparison between SLUMP and FLOW')
     fig, ax = plt.subplots()
     sns.scatterplot(x=data['SLUMP(cm)'].to_numpy(), y=data['FLOW(cm)'].to_numpy(), ax=ax)
     st.pyplot(fig)
@@ -187,17 +188,30 @@ def clustering(data):
         n_clusters = st.slider("Number of clusters", 2, 10, 3)
         kmeans = KMeans(n_clusters=n_clusters)
         labels = kmeans.fit_predict(data)
+        inertia = kmeans.inertia_
+        st.write(f"Inertia: {inertia}")
     elif algorithm == "DBSCAN":
         eps = st.slider("Epsilon", 0.1, 10.0, 0.5)
         min_samples = st.slider("Minimum samples", 1, 10, 5)
         dbscan = DBSCAN(eps=eps, min_samples=min_samples)
         labels = dbscan.fit_predict(data)
+        core_sample_indices = len(dbscan.core_sample_indices_)
+        st.write(f"Core sample indices: {core_sample_indices}")
+    
+    silhouette_avg = silhouette_score(data, labels)
+    st.write(f"Silhouette Score: {silhouette_avg}")
+
     data['Cluster'] = labels
     return data, labels
 
 def visualize_clusters(data):
-    fig = px.scatter(data, x=data.columns[0], y=data.columns[1], color='Cluster')
-    st.plotly_chart(fig)
+    if len(data.columns) >= 2:
+        fig = px.scatter(data, x=data.columns[0], y=data.columns[1], color='Cluster')
+        st.plotly_chart(fig)
+    if len(data.columns) >= 3:
+        fig = px.scatter_3d(data, x=data.columns[0], y=data.columns[1], z=data.columns[2], color='Cluster')
+        st.plotly_chart(fig)
+
 
 def cluster_statistics(data, labels):
     st.write("Number of data points in each cluster: ", np.bincount(labels))
