@@ -5,6 +5,7 @@ from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.cluster import KMeans, DBSCAN
 import matplotlib.pyplot as plt
+from sklearn.metrics import silhouette_score
 import seaborn as sns
 import plotly.express as px
 import csv
@@ -139,6 +140,7 @@ def plot_boxplot(data):
     fig, ax = plt.subplots()
     sns.boxplot(x=data[column], ax=ax)
     st.pyplot(fig)
+
 # Part IV: Clustering or Prediction
 def clustering(data):
     # Ensure there are no NaN values
@@ -149,17 +151,30 @@ def clustering(data):
         n_clusters = st.slider("Number of clusters", 2, 10, 3)
         kmeans = KMeans(n_clusters=n_clusters)
         labels = kmeans.fit_predict(data)
+        inertia = kmeans.inertia_
+        st.write(f"Inertia: {inertia}")
     elif algorithm == "DBSCAN":
         eps = st.slider("Epsilon", 0.1, 10.0, 0.5)
         min_samples = st.slider("Minimum samples", 1, 10, 5)
         dbscan = DBSCAN(eps=eps, min_samples=min_samples)
         labels = dbscan.fit_predict(data)
+        core_sample_indices = len(dbscan.core_sample_indices_)
+        st.write(f"Core sample indices: {core_sample_indices}")
+    
+    silhouette_avg = silhouette_score(data, labels)
+    st.write(f"Silhouette Score: {silhouette_avg}")
+
     data['Cluster'] = labels
     return data, labels
 
 def visualize_clusters(data):
-    fig = px.scatter(data, x=data.columns[0], y=data.columns[1], color='Cluster')
-    st.plotly_chart(fig)
+    if len(data.columns) >= 2:
+        fig = px.scatter(data, x=data.columns[0], y=data.columns[1], color='Cluster')
+        st.plotly_chart(fig)
+    if len(data.columns) >= 3:
+        fig = px.scatter_3d(data, x=data.columns[0], y=data.columns[1], z=data.columns[2], color='Cluster')
+        st.plotly_chart(fig)
+
 
 def cluster_statistics(data, labels):
     st.write("Number of data points in each cluster: ")
@@ -197,6 +212,7 @@ def main():
             st.header("Visualization of the Cleaned Data")
             plot_histogram(data)
             plot_boxplot(data)
+            additional_visualizations(data)
         
         if st.checkbox("Perform Clustering or Prediction"):
             # drop column with other than float type
