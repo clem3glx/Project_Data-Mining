@@ -41,7 +41,7 @@ def load_data():
     return None
 
 def data_description(data):
-    st.markdown("<h3 style='padding-left: 95px;'>Data Overview selection</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='padding-left: 95px;'>Data Overview</h3>", unsafe_allow_html=True)
 
     # Split into two columns for better layout
     col1, col2 = st.columns(2)
@@ -56,10 +56,18 @@ def data_description(data):
         for col in data.columns:
             st.markdown(f"<li style='font-family: monospace;'>{col}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
+    
     st.markdown("<h3 style='padding-left: 95px;'>Missing Values per Column</h3>", unsafe_allow_html=True)
     missing_values = data.isnull().sum()
-    missing_values_df = pd.DataFrame(missing_values, columns=['Missing Values'])
+    missing_percentage = (missing_values / len(data)) * 100
+    missing_values_df = pd.DataFrame({
+        'Missing Values': missing_values,
+        'Percentage': missing_percentage
+    })
     st.table(missing_values_df)
+    
+    st.markdown("<h3 style='padding-left: 95px;'>Descriptive Statistics</h3>", unsafe_allow_html=True)
+    st.dataframe(data.describe())
 
 # Part II: Data Pre-processing and Cleaning
 def handle_missing_values(data):
