@@ -4,8 +4,9 @@ import numpy as np
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.cluster import KMeans, DBSCAN
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, mean_squared_error, r2_score
 import seaborn as sns
 import plotly.express as px
 import csv
@@ -206,6 +207,8 @@ def slump_flow_comp(data):
 # Part IV: Clustering or Prediction
 def clustering(data):
     algorithm = st.selectbox("Choose clustering algorithm", ["K-means", "DBSCAN"])
+    labels = None
+
     if algorithm == "K-means":
         n_clusters = st.slider("Number of clusters", 2, 10, 3)
         kmeans = KMeans(n_clusters=n_clusters)
@@ -220,11 +223,17 @@ def clustering(data):
         core_sample_indices = len(dbscan.core_sample_indices_)
         st.write(f"Core sample indices: {core_sample_indices}")
 
-    silhouette_avg = silhouette_score(data, labels)
-    st.write(f"Silhouette Score: {silhouette_avg}")
+        if len(set(labels)) == 1:
+            st.error("DBSCAN could not form more than one cluster, please adjust the parameters.")
+            return data, labels, None
+
+    # Check if the number of clusters is appropriate
+    if labels is not None and len(set(labels)) > 1:
+        silhouette_avg = silhouette_score(data, labels)
+        st.write(f"Silhouette Score: {silhouette_avg}")
 
     data['Cluster'] = labels
-    return data, labels
+    return data, labels, silhouette_avg
 
 def visualize_clusters(data):
     if len(data.columns) >= 2:
@@ -241,6 +250,39 @@ def cluster_statistics(data, labels):
         centers = data.groupby('Cluster').mean()
         st.write("Centers of each cluster: ")
         st.dataframe(centers)
+
+# New function for prediction
+def prediction(data):
+    st.header("Prediction using Linear Regression")
+    input_vars = ['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.']
+    output_vars = ['SLUMP(cm)', 'FLOW(cm)', 'Compressive Strength (28-day)(Mpa)']
+    
+    selected_output = st.selectbox("Select the output variable to predict", output_vars)
+    
+    X = data[input_vars]
+    y = data[selected_output]
+    
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    st.subheader("Model Evaluation")
+    y_pred = model.predict(X)
+    
+    mse = mean_squared_error(y, y_pred)
+    r2 = r2_score(y, y_pred)
+    
+    st.write(f"Mean Squared Error: {mse}")
+    st.write(f"R² Score: {r2}")
+    
+    st.subheader("Make a Prediction")
+    input_data = {}
+    for var in input_vars:
+        input_data[var] = st.number_input(f"Enter value for {var}", value=float(data[var].mean()))
+    
+    input_df = pd.DataFrame([input_data])
+    predicted_value = model.predict(input_df)[0]
+    
+    st.write(f"Predicted {selected_output}: {predicted_value}")
 
 # Main function to run the app
 def main():
@@ -268,12 +310,15 @@ def main():
             # drop column with other than float type
             data = data.select_dtypes(include=[np.number])
             st.header("Clustering or Prediction")
-            data, labels = clustering(data)
+            data, labels, silhouette_avg = clustering(data)
         
         if st.checkbox("Evaluate Learning"):
             st.header("Learning Evaluation")
             visualize_clusters(data)
             cluster_statistics(data, labels)
+        
+        if st.checkbox("Make Predictions"):
+            prediction(data)
 
 
 if __name__ == "__main__":
