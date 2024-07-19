@@ -97,7 +97,7 @@ def handle_missing_values(data):
 
 
 def normalize_data(data):
-    method = st.selectbox("Choose normalization method", ["Min-Max", "Z-score"])
+    method = st.selectbox("Choose normalization method", ["No normalization for the moment", "Min-Max", "Z-score"])
     
     # Drop any rows or columns that are completely empty
     data = data.dropna(how='all')
@@ -110,7 +110,9 @@ def normalize_data(data):
         st.error("No numeric columns available for normalization.")
         return data
     
-    if method == "Min-Max":
+    if method == "No normalization for the moment":
+        return data
+    elif method == "Min-Max":
         scaler = MinMaxScaler()
     elif method == "Z-score":
         scaler = StandardScaler()
@@ -174,6 +176,26 @@ def additional_visualizations(data):
     # sns.boxplot(data=data[['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.', 'Compressive Strength (28-day)(Mpa)']])
     # st.pyplot(fig)
 
+    input_vars = ['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.']
+    output_vars = ['SLUMP(cm)', 'FLOW(cm)', 'Compressive Strength (28-day)(Mpa)']
+    st.subheader('Matrices de Corrélation')
+
+    # Corrélation entre variables d'entrée et de sortie
+    corr_in_out = data[input_vars + output_vars].corr().loc[input_vars, output_vars]
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(corr_in_out, annot=True, cmap='coolwarm', ax=ax)
+    plt.title('Corrélations entre Variables d\'Entrée et de Sortie')
+    st.pyplot(fig)
+
+    output_vars = ['SLUMP(cm)', 'FLOW(cm)', 'Compressive Strength (28-day)(Mpa)']
+    st.subheader('Régression')
+    x = st.selectbox("Choose X-axis variable for regression", data.columns)
+    y = st.selectbox("Choose Y-axis variable for regression", output_vars)
+    fig, ax = plt.subplots()
+    sns.regplot(x=data[x], y=data[y], ax=ax)
+    st.pyplot(fig)
+
+def slump_flow_comp(data):
     # Comparison between SLUMP and FLOW
     st.header('Comparison between SLUMP and FLOW')
     fig, ax = plt.subplots()
@@ -197,7 +219,7 @@ def clustering(data):
         labels = dbscan.fit_predict(data)
         core_sample_indices = len(dbscan.core_sample_indices_)
         st.write(f"Core sample indices: {core_sample_indices}")
-    
+
     silhouette_avg = silhouette_score(data, labels)
     st.write(f"Silhouette Score: {silhouette_avg}")
 
@@ -234,11 +256,14 @@ def main():
             data = normalize_data(data)
         
         if st.checkbox("Visualize Cleaned Data"):
+            input_vars = ['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.']
+            output_vars = ['SLUMP(cm)', 'FLOW(cm)', 'Compressive Strength (28-day)(Mpa)']
             st.header("Visualization of the Cleaned Data")
             plot_histogram(data)
             plot_boxplot(data)
             additional_visualizations(data)
-        
+            slump_flow_comp(data)
+                    
         if st.checkbox("Perform Clustering or Prediction"):
             # drop column with other than float type
             data = data.select_dtypes(include=[np.number])
