@@ -141,11 +141,48 @@ def plot_boxplot(data):
     sns.boxplot(x=data[column], ax=ax)
     st.pyplot(fig)
 
+def additional_visualizations(data):
+    # Distribution des Composants de Béton
+    # st.header('Distribution des Composants de Béton')
+    components = ['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.']
+    # for component in components:
+    #         st.subheader(f'Distribution de {component}')
+    #         fig, ax = plt.subplots()
+    #         sns.histplot(data[component], bins=30, kde=True, ax=ax)
+    #         st.pyplot(fig)
+
+    # Relations entre les composants et les sorties
+    # st.header('Relations entre les Composants et les Sorties')
+    outputs = ['SLUMP(cm)', 'FLOW(cm)', 'Compressive Strength (28-day)(Mpa)']
+    # for output in outputs:
+    #     for component in components:
+    #         st.subheader(f'Relation entre {component} et {output}')
+    #         fig, ax = plt.subplots()
+    #         sns.scatterplot(x=data[component].to_numpy(), y=data[output].to_numpy(), ax=ax)
+    #         st.pyplot(fig)
+
+    # Correlation Matrix
+    st.header('Correlation matrix')
+    fig, ax = plt.subplots()
+    corr_matrix = data.corr()
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', ax=ax)
+    st.pyplot(fig)
+
+    # # Analysis of Compressive Force at 28 Days
+    # st.header('Analysis of Compressive Force at 28 Days')
+    # fig, ax = plt.subplots()
+    # sns.boxplot(data=data[['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.', 'Compressive Strength (28-day)(Mpa)']])
+    # st.pyplot(fig)
+
+    # Comparison between SLUMP and FLOW
+    st.header('Comparison between SLUMP and FLOW')
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=data['SLUMP(cm)'].to_numpy(), y=data['FLOW(cm)'].to_numpy(), ax=ax)
+    st.pyplot(fig)
+
+
 # Part IV: Clustering or Prediction
 def clustering(data):
-    # Ensure there are no NaN values
-    data = data.dropna()
-    
     algorithm = st.selectbox("Choose clustering algorithm", ["K-means", "DBSCAN"])
     if algorithm == "K-means":
         n_clusters = st.slider("Number of clusters", 2, 10, 3)
@@ -177,24 +214,12 @@ def visualize_clusters(data):
 
 
 def cluster_statistics(data, labels):
-    st.write("Number of data points in each cluster: ")
-    
-    # Separate noise points and valid clusters
-    noise_points = np.sum(labels == -1)
-    valid_clusters = labels[labels != -1]
-    
-    # Count data points in valid clusters
-    cluster_counts = np.bincount(valid_clusters)
-    
-    st.write("Valid clusters: ", cluster_counts)
-    st.write("Noise points: ", noise_points)
-    
+    st.write("Number of data points in each cluster: ", np.bincount(labels))
     if 'Cluster' in data.columns:
-        centers = data[data['Cluster'] != -1].groupby('Cluster').mean()
+        centers = data.groupby('Cluster').mean()
         st.write("Centers of each cluster: ")
         st.dataframe(centers)
 
-        
 # Main function to run the app
 def main():
     st.title("Data Mining Project")
