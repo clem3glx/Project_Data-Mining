@@ -140,6 +140,46 @@ def plot_boxplot(data):
     sns.boxplot(x=data[column], ax=ax)
     st.pyplot(fig)
 
+def additional_visualizations(data):
+    # Distribution des Composants de Béton
+    # st.header('Distribution des Composants de Béton')
+    components = ['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.']
+    # for component in components:
+    #         st.subheader(f'Distribution de {component}')
+    #         fig, ax = plt.subplots()
+    #         sns.histplot(data[component], bins=30, kde=True, ax=ax)
+    #         st.pyplot(fig)
+
+    # Relations entre les composants et les sorties
+    # st.header('Relations entre les Composants et les Sorties')
+    outputs = ['SLUMP(cm)', 'FLOW(cm)', 'Compressive Strength (28-day)(Mpa)']
+    # for output in outputs:
+    #     for component in components:
+    #         st.subheader(f'Relation entre {component} et {output}')
+    #         fig, ax = plt.subplots()
+    #         sns.scatterplot(x=data[component].to_numpy(), y=data[output].to_numpy(), ax=ax)
+    #         st.pyplot(fig)
+
+    # Matrice de corrélation
+    st.header('Matrice de Corrélation')
+    fig, ax = plt.subplots()
+    corr_matrix = data.corr()
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', ax=ax)
+    st.pyplot(fig)
+
+    # Analyse de la force compressive à 28 jours
+    st.header('Analyse de la Force Compressive à 28 Jours')
+    fig, ax = plt.subplots()
+    sns.boxplot(data=data[['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.', 'Compressive Strength (28-day)(Mpa)']])
+    st.pyplot(fig)
+
+    # Comparaison entre SLUMP et FLOW
+    st.header('Comparaison entre SLUMP et FLOW')
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=data['SLUMP(cm)'].to_numpy(), y=data['FLOW(cm)'].to_numpy(), ax=ax)
+    st.pyplot(fig)
+
+
 # Part IV: Clustering or Prediction
 def clustering(data):
     algorithm = st.selectbox("Choose clustering algorithm", ["K-means", "DBSCAN"])
@@ -183,6 +223,7 @@ def main():
             st.header("Visualization of the Cleaned Data")
             plot_histogram(data)
             plot_boxplot(data)
+            additional_visualizations(data)
         
         if st.checkbox("Perform Clustering or Prediction"):
             # drop column with other than float type
