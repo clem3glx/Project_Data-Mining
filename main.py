@@ -22,7 +22,7 @@ def detect_delimiter(file):
     return detected_delimiter
 
 def load_data():
-    file = st.file_uploader("Upload CSV", type=["csv"])
+    file = st.file_uploader("Upload CSV", type=["csv", "data"])
     if file is not None:
         delimiter = detect_delimiter(file)
         delimiter = st.text_input("Delimiter detected:", value=delimiter)
@@ -41,7 +41,7 @@ def load_data():
     return None
 
 def data_description(data):
-    st.markdown("<h3 style='padding-left: 95px;'>Data Overview selection</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='padding-left: 95px;'>Data Overview</h3>", unsafe_allow_html=True)
 
     # Split into two columns for better layout
     col1, col2 = st.columns(2)
@@ -56,13 +56,27 @@ def data_description(data):
         for col in data.columns:
             st.markdown(f"<li style='font-family: monospace;'>{col}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
+    
     st.markdown("<h3 style='padding-left: 95px;'>Missing Values per Column</h3>", unsafe_allow_html=True)
     missing_values = data.isnull().sum()
-    missing_values_df = pd.DataFrame(missing_values, columns=['Missing Values'])
+    missing_percentage = (missing_values / len(data)) * 100
+    missing_values_df = pd.DataFrame({
+        'Missing Values': missing_values,
+        'Percentage': missing_percentage
+    })
     st.table(missing_values_df)
+    
+    st.markdown("<h3 style='padding-left: 95px;'>Descriptive Statistics</h3>", unsafe_allow_html=True)
+    st.dataframe(data.describe())
 
 # Part II: Data Pre-processing and Cleaning
 def handle_missing_values(data):
+    st.markdown("<h3 style='padding-left: 95px;'>Drop Columns</h3>", unsafe_allow_html=True)
+    column_to_drop = st.multiselect("Select column(s) to drop", data.columns)
+    if column_to_drop:
+        data = data.drop(columns=column_to_drop)
+
+    st.markdown("<h3 style='padding-left: 95px;'>Handle Missing Values</h3>", unsafe_allow_html=True)
     method = st.selectbox("Choose method to handle missing values", ["Delete rows", "Delete columns", "Mean", "Median", "Mode", "KNN Imputation", "Simple Imputation"])
     if method == "Delete rows":
         data = data.dropna()
@@ -79,6 +93,7 @@ def handle_missing_values(data):
         value = st.text_input("Value to replace missing values")
         data = data.fillna(value)
     return data
+
 
 def normalize_data(data):
     method = st.selectbox("Choose normalization method", ["Min-Max", "Z-score"])
@@ -124,9 +139,11 @@ def plot_boxplot(data):
     fig, ax = plt.subplots()
     sns.boxplot(x=data[column], ax=ax)
     st.pyplot(fig)
-
 # Part IV: Clustering or Prediction
 def clustering(data):
+    # Ensure there are no NaN values
+    data = data.dropna()
+    
     algorithm = st.selectbox("Choose clustering algorithm", ["K-means", "DBSCAN"])
     if algorithm == "K-means":
         n_clusters = st.slider("Number of clusters", 2, 10, 3)
@@ -145,12 +162,24 @@ def visualize_clusters(data):
     st.plotly_chart(fig)
 
 def cluster_statistics(data, labels):
-    st.write("Number of data points in each cluster: ", np.bincount(labels))
+    st.write("Number of data points in each cluster: ")
+    
+    # Separate noise points and valid clusters
+    noise_points = np.sum(labels == -1)
+    valid_clusters = labels[labels != -1]
+    
+    # Count data points in valid clusters
+    cluster_counts = np.bincount(valid_clusters)
+    
+    st.write("Valid clusters: ", cluster_counts)
+    st.write("Noise points: ", noise_points)
+    
     if 'Cluster' in data.columns:
-        centers = data.groupby('Cluster').mean()
+        centers = data[data['Cluster'] != -1].groupby('Cluster').mean()
         st.write("Centers of each cluster: ")
         st.dataframe(centers)
 
+        
 # Main function to run the app
 def main():
     st.title("Data Mining Project")
