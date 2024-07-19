@@ -206,39 +206,59 @@ def slump_flow_comp(data):
 
 # Part IV: Clustering or Prediction
 def clustering(data):
+    data_selected = data["Compressive Strength (28-day)(Mpa)"].to_numpy().reshape(-1, 1)
     algorithm = st.selectbox("Choose clustering algorithm", ["K-means", "DBSCAN"])
     labels = None
+
     if algorithm == "K-means":
-        n_clusters = st.slider("Number of clusters", 2, 10, 3)
+        st.markdown("#### K-means Clustering")
+        max_clusters = st.slider("Maximum number of clusters", 2, 20, 10)
+        sse = []
+        for k in range(2, max_clusters+1):
+            kmeans = KMeans(n_clusters=k)
+            kmeans.fit(data_selected)
+            sse.append(kmeans.inertia_)
+        fig, ax = plt.subplots()
+        ax.plot(range(2, max_clusters+1), sse, marker='o')
+        ax.set_xlabel("Number of clusters")
+        ax.set_ylabel("SSE")
+        ax.set_title("Elbow Method For Optimal k")
+        st.pyplot(fig)
+
+        n_clusters = st.slider("Select number of clusters", 2, max_clusters, 3)
         kmeans = KMeans(n_clusters=n_clusters)
-        labels = kmeans.fit_predict(data)
-        inertia = kmeans.inertia_
-        st.write(f"Inertia: {inertia}")
+        labels = kmeans.fit_predict(data_selected)
+        st.write(f"Inertia: {kmeans.inertia_}")
+
     elif algorithm == "DBSCAN":
+        st.markdown("#### DBSCAN Clustering")
         eps = st.slider("Epsilon", 0.1, 10.0, 0.5)
         min_samples = st.slider("Minimum samples", 1, 10, 5)
         dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-        labels = dbscan.fit_predict(data)
-        labels = np.where(labels == -1, 0, labels)  # Replace -1 with 0 or any other appropriate label
+        labels = dbscan.fit_predict(data_selected)
+        labels = np.where(labels == -1, 0, labels)
         core_sample_indices = len(dbscan.core_sample_indices_)
         st.write(f"Core sample indices: {core_sample_indices}")
         if len(set(labels)) == 1:
             st.error("DBSCAN could not form more than one cluster, please adjust the parameters.")
             return data, labels, None
+
     if labels is not None and len(set(labels)) > 1:
-        silhouette_avg = silhouette_score(data, labels)
+        silhouette_avg = silhouette_score(data_selected, labels)
         st.write(f"Silhouette Score: {silhouette_avg}")
-    data['Cluster'] = labels
-    return data, labels, silhouette_avg
+        data['Cluster'] = labels
+        return data, labels, silhouette_avg
+    else:
+        return None, None, None
 
 
 def visualize_clusters(data):
     if len(data.columns) >= 2:
         fig = px.scatter(data, x=data.columns[0], y=data.columns[1], color='Cluster')
         st.plotly_chart(fig)
-    if len(data.columns) >= 3:
-        fig = px.scatter_3d(data, x=data.columns[0], y=data.columns[1], z=data.columns[2], color='Cluster')
-        st.plotly_chart(fig)
+    # if len(data.columns) >= 3:
+    #     fig = px.scatter_3d(data, x=data.columns[0], y=data.columns[1], z=data.columns[2], color='Cluster')
+    #     st.plotly_chart(fig)
 
 
 def cluster_statistics(data, labels):
@@ -248,7 +268,7 @@ def cluster_statistics(data, labels):
         st.write("Centers of each cluster: ")
         st.dataframe(centers)
 
-# New function for prediction
+# prediction
 def prediction(data):
     st.header("Prediction using Linear Regression")
     input_vars = ['Cement', 'Slag', 'Fly ash', 'Water', 'SP', 'Coarse Aggr.', 'Fine Aggr.']
